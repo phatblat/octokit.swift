@@ -42,29 +42,41 @@ import RequestKit
 // MARK: request
 
 public extension Octokit {
-    public func user(name: String, completion: (response: Response<User>) -> Void) {
-        let router = UserRouter.ReadUser(name, self.configuration)
-        router.loadJSON([String: AnyObject].self) { json, error in
+
+    /**
+        Fetches a user or organization
+        - parameter session: RequestKitURLSession, defaults to NSURLSession.sharedSession()
+        - parameter name: The name of the user or organization.
+        - parameter completion: Callback for the outcome of the fetch.
+    */
+    public func user(_ session: RequestKitURLSession = URLSession.shared, name: String, completion: @escaping (_ response: Response<User>) -> Void) -> URLSessionDataTaskProtocol? {
+        let router = UserRouter.readUser(name, self.configuration)
+        return router.loadJSON(session, expectedResultType: [String: AnyObject].self) { json, error in
             if let error = error {
-                completion(response: Response.Failure(error))
+                completion(Response.failure(error))
             } else {
                 if let json = json {
                     let parsedUser = User(json)
-                    completion(response: Response.Success(parsedUser))
+                    completion(Response.success(parsedUser))
                 }
             }
         }
     }
 
-    public func me(completion: (response: Response<User>) -> Void) {
-        let router = UserRouter.ReadAuthenticatedUser(self.configuration)
-        router.loadJSON([String: AnyObject].self) { json, error in
+    /**
+        Fetches the authenticated user
+        - parameter session: RequestKitURLSession, defaults to NSURLSession.sharedSession()
+        - parameter completion: Callback for the outcome of the fetch.
+    */
+    public func me(_ session: RequestKitURLSession = URLSession.shared, completion: @escaping (_ response: Response<User>) -> Void) -> URLSessionDataTaskProtocol? {
+        let router = UserRouter.readAuthenticatedUser(self.configuration)
+        return router.loadJSON(session, expectedResultType: [String: AnyObject].self) { json, error in
             if let error = error {
-                completion(response: Response.Failure(error))
+                completion(Response.failure(error))
             } else {
                 if let json = json {
                     let parsedUser = User(json)
-                    completion(response: Response.Success(parsedUser))
+                    completion(Response.success(parsedUser))
                 }
             }
         }
@@ -73,44 +85,35 @@ public extension Octokit {
 
 // MARK: Router
 
-public enum UserRouter: Router {
-    case ReadAuthenticatedUser(Configuration)
-    case ReadUser(String, Configuration)
+enum UserRouter: Router {
+    case readAuthenticatedUser(Configuration)
+    case readUser(String, Configuration)
 
-    public var configuration: Configuration {
+    var configuration: Configuration {
         switch self {
-        case .ReadAuthenticatedUser(let config): return config
-        case .ReadUser(_, let config): return config
+        case .readAuthenticatedUser(let config): return config
+        case .readUser(_, let config): return config
         }
     }
 
-    public var method: HTTPMethod {
+    var method: HTTPMethod {
         return .GET
     }
 
-    public var encoding: HTTPEncoding {
-        return .URL
+    var encoding: HTTPEncoding {
+        return .url
     }
 
-    public var path: String {
+    var path: String {
         switch self {
-        case .ReadAuthenticatedUser:
+        case .readAuthenticatedUser:
             return "user"
-        case .ReadUser(let username, _):
+        case .readUser(let username, _):
             return "users/\(username)"
         }
     }
 
-    public var params: [String: String] {
+    var params: [String: Any] {
         return [:]
-    }
-
-    public var URLRequest: NSURLRequest? {
-        switch self {
-        case .ReadAuthenticatedUser(_):
-            return request()
-        case .ReadUser(_, _):
-            return request()
-        }
     }
 }

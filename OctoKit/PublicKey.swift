@@ -4,61 +4,54 @@ import RequestKit
 // MARK: request
 
 public extension Octokit {
-    public func postPublicKey(publicKey: String, title: String, completion: (response:Response<String>) -> Void) {
-        let router = PublicKeyRouter.PostPublicKey(publicKey, title, configuration)
-        router.postJSON([String: AnyObject].self) { json, error in
+    public func postPublicKey(_ session: RequestKitURLSession = URLSession.shared, publicKey: String, title: String, completion: @escaping (_ response: Response<String>) -> Void) -> URLSessionDataTaskProtocol? {
+        let router = PublicKeyRouter.postPublicKey(publicKey, title, configuration)
+        return router.postJSON(session, expectedResultType: [String: AnyObject].self) { json, error in
             if let error = error {
-                completion(response: Response.Failure(error))
+                completion(Response.failure(error))
             } else {
                 if let _ = json {
-                    completion(response: Response.Success(publicKey))
+                    completion(Response.success(publicKey))
                 }
             }
         }
     }
 }
 
-public enum PublicKeyRouter: JSONPostRouter {
-    case PostPublicKey(String, String, Configuration)
+enum PublicKeyRouter: JSONPostRouter {
+    case postPublicKey(String, String, Configuration)
 
-    public var configuration: Configuration {
+    var configuration: Configuration {
         switch self {
-        case .PostPublicKey(_, _, let config): return config
+        case .postPublicKey(_, _, let config): return config
         }
     }
 
-    public var method: HTTPMethod {
+    var method: HTTPMethod {
         switch self {
-        case .PostPublicKey:
+        case .postPublicKey:
             return .POST
         }
     }
 
-    public var encoding: HTTPEncoding {
+    var encoding: HTTPEncoding {
         switch self {
-        case .PostPublicKey:
-            return .JSON
+        case .postPublicKey:
+            return .json
         }
     }
 
-    public var path: String {
+    var path: String {
         switch self {
-        case .PostPublicKey:
+        case .postPublicKey:
             return "user/keys"
         }
     }
 
-    public var params: [String: String] {
+    var params: [String: Any] {
         switch self {
-        case .PostPublicKey(let publicKey, let title, _):
+        case .postPublicKey(let publicKey, let title, _):
             return ["title": title, "key": publicKey]
-        }
-    }
-
-    public var URLRequest: NSURLRequest? {
-        switch self {
-        case .PostPublicKey(_, _, _):
-            return request()
         }
     }
 }

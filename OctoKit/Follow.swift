@@ -2,104 +2,123 @@ import Foundation
 import RequestKit
 
 public extension Octokit {
-    public func myFollowers(completion: (response: Response<[User]>) -> Void) {
-        let router = FollowRouter.ReadAuthenticatedFollowers(configuration)
-        router.loadJSON([[String: AnyObject]].self) { json, error in
+
+    /**
+        Fetches the followers of the authenticated user
+        - parameter session: RequestKitURLSession, defaults to NSURLSession.sharedSession()
+        - parameter completion: Callback for the outcome of the fetch.
+    */
+    public func myFollowers(_ session: RequestKitURLSession = URLSession.shared, completion: @escaping (_ response: Response<[User]>) -> Void) -> URLSessionDataTaskProtocol? {
+        let router = FollowRouter.readAuthenticatedFollowers(configuration)
+        return router.loadJSON(session, expectedResultType: [[String: AnyObject]].self) { json, error in
             if let error = error {
-                completion(response: Response.Failure(error))
+                completion(Response.failure(error))
             } else {
                 if let json = json {
                     let parsedUsers = json.map { User($0) }
-                    completion(response: Response.Success(parsedUsers))
+                    completion(Response.success(parsedUsers))
                 }
             }
         }
     }
 
-    public func followers(name: String, completion: (response: Response<[User]>) -> Void) {
-        let router = FollowRouter.ReadFollowers(name, configuration)
-        router.loadJSON([[String: AnyObject]].self) { json, error in
+    /**
+        Fetches the followers of a user
+        - parameter session: RequestKitURLSession, defaults to NSURLSession.sharedSession()
+        - parameter name: Name of the user
+        - parameter completion: Callback for the outcome of the fetch.
+    */
+    public func followers(_ session: RequestKitURLSession = URLSession.shared, name: String, completion: @escaping (_ response: Response<[User]>) -> Void) -> URLSessionDataTaskProtocol? {
+        let router = FollowRouter.readFollowers(name, configuration)
+        return router.loadJSON(session, expectedResultType: [[String: AnyObject]].self) { json, error in
             if let error = error {
-                completion(response: Response.Failure(error))
+                completion(Response.failure(error))
             } else {
                 if let json = json {
                     let parsedUsers = json.map { User($0) }
-                    completion(response: Response.Success(parsedUsers))
+                    completion(Response.success(parsedUsers))
                 }
             }
         }
     }
 
-    public func myFollowing(completion: (response: Response<[User]>) -> Void) {
-        let router = FollowRouter.ReadAuthenticatedFollowing(configuration)
-        router.loadJSON([[String: AnyObject]].self) { json, error in
+    /**
+        Fetches the users following the authenticated user
+        - parameter session: RequestKitURLSession, defaults to NSURLSession.sharedSession()
+        - parameter completion: Callback for the outcome of the fetch.
+    */
+    public func myFollowing(_ session: RequestKitURLSession = URLSession.shared, completion: @escaping (_ response: Response<[User]>) -> Void) -> URLSessionDataTaskProtocol? {
+        let router = FollowRouter.readAuthenticatedFollowing(configuration)
+        return router.loadJSON(session, expectedResultType: [[String: AnyObject]].self) { json, error in
             if let error = error {
-                completion(response: Response.Failure(error))
+                completion(Response.failure(error))
             } else {
                 if let json = json {
                     let parsedUsers = json.map { User($0) }
-                    completion(response: Response.Success(parsedUsers))
+                    completion(.success(parsedUsers))
                 }
             }
         }
     }
 
-    public func following(name: String, completion: (response: Response<[User]>) -> Void) {
-        let router = FollowRouter.ReadFollowing(name, configuration)
-        router.loadJSON([[String: AnyObject]].self) { json, error in
+    /**
+        Fetches the users following a user
+        - parameter session: RequestKitURLSession, defaults to NSURLSession.sharedSession()
+        - parameter name: The name of the user
+        - parameter completion: Callback for the outcome of the fetch.
+    */
+    public func following(_ session: RequestKitURLSession = URLSession.shared, name: String, completion: @escaping (_ response: Response<[User]>) -> Void) -> URLSessionDataTaskProtocol? {
+        let router = FollowRouter.readFollowing(name, configuration)
+        return router.loadJSON(session, expectedResultType: [[String: AnyObject]].self) { json, error in
             if let error = error {
-                completion(response: Response.Failure(error))
+                completion(Response.failure(error))
             } else {
                 if let json = json {
                     let parsedUsers = json.map { User($0) }
-                    completion(response: Response.Success(parsedUsers))
+                    completion(Response.success(parsedUsers))
                 }
             }
         }
     }
 }
 
-public enum FollowRouter: Router {
-    case ReadAuthenticatedFollowers(Configuration)
-    case ReadFollowers(String, Configuration)
-    case ReadAuthenticatedFollowing(Configuration)
-    case ReadFollowing(String, Configuration)
+enum FollowRouter: Router {
+    case readAuthenticatedFollowers(Configuration)
+    case readFollowers(String, Configuration)
+    case readAuthenticatedFollowing(Configuration)
+    case readFollowing(String, Configuration)
 
-    public var method: HTTPMethod {
+    var method: HTTPMethod {
         return .GET
     }
 
-    public var encoding: HTTPEncoding {
-        return .URL
+    var encoding: HTTPEncoding {
+        return .url
     }
 
-    public var configuration: Configuration {
+    var configuration: Configuration {
         switch self {
-        case .ReadAuthenticatedFollowers(let config): return config
-        case .ReadFollowers(_, let config): return config
-        case .ReadAuthenticatedFollowing(let config): return config
-        case .ReadFollowing(_, let config): return config
+        case .readAuthenticatedFollowers(let config): return config
+        case .readFollowers(_, let config): return config
+        case .readAuthenticatedFollowing(let config): return config
+        case .readFollowing(_, let config): return config
         }
     }
 
-    public var path: String {
+    var path: String {
         switch self {
-        case .ReadAuthenticatedFollowers:
+        case .readAuthenticatedFollowers:
             return "user/followers"
-        case .ReadFollowers(let username, _):
+        case .readFollowers(let username, _):
             return "users/\(username)/followers"
-        case .ReadAuthenticatedFollowing:
+        case .readAuthenticatedFollowing:
             return "user/following"
-        case .ReadFollowing(let username, _):
+        case .readFollowing(let username, _):
             return "users/\(username)/following"
         }
     }
 
-    public var params: [String: String] {
+    var params: [String: Any] {
         return [:]
-    }
-
-    public var URLRequest: NSURLRequest? {
-        return request()
     }
 }
